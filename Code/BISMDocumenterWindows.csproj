@@ -61,7 +61,7 @@
     <SignManifests>false</SignManifests>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>bismdocumenter.ico</ApplicationIcon>
+    <ApplicationIcon>Helpers\bismdocumenter.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.AnalysisServices, Version=13.0.0.0, Culture=neutral, PublicKeyToken=89845dcd8080cc91, processorArchitecture=MSIL">
@@ -94,20 +94,21 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BISMDocumenterAMO.cs" />
+    <Compile Include="BISMDocumenterCls.cs" />
     <Compile Include="BISMDocumenterTOM.cs" />
-    <Compile Include="frmBISMDocumenter.cs">
+    <Compile Include="UI\frmBISMDocumenter.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="frmBISMDocumenter.Designer.cs">
+    <Compile Include="UI\frmBISMDocumenter.Designer.cs">
       <DependentUpon>frmBISMDocumenter.cs</DependentUpon>
     </Compile>
-    <Compile Include="ManagedIpHelper.cs" />
-    <Compile Include="PowerBIHelper.cs" />
+    <Compile Include="Settings.cs" />
+    <Compile Include="Helpers\ManagedIpHelper.cs" />
+    <Compile Include="Helpers\PowerBIHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgressWritter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="frmBISMDocumenter.resx">
+    <EmbeddedResource Include="UI\frmBISMDocumenter.resx">
       <DependentUpon>frmBISMDocumenter.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
@@ -187,7 +188,7 @@
     </PublishFile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="bismdocumenter.ico" />
+    <Content Include="Helpers\bismdocumenter.ico" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,34 +1,22 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.IO;
-
+﻿using Microsoft.Office.Interop.Excel;
+using System;
 using AMO = Microsoft.AnalysisServices;
 using TOM = Microsoft.AnalysisServices.Tabular;
-
-using Microsoft.Office.Interop.Excel;
-using System.Windows.Forms;
 
 
 namespace BISMDocumenterAMO
 {
     public class BISMDocumenterCls
     {
-        string AppPath;
-        string OutputPath;
+        private string OutputPath;
 
-        Microsoft.Office.Interop.Excel.Application XLApp;
-        Microsoft.Office.Interop.Excel.Workbook XLWorkBook;
-        Microsoft.Office.Interop.Excel.Worksheet XLWorkSheet;
+        Application XLApp;
+        Workbook XLWorkBook;
+        Worksheet XLWorkSheet;
 
-        String OLAPServerName;
-        String OLAPDBName;
-        String OLAPCubeName;
+        private string OLAPServerName;
+        private string OLAPDBName;
+        private string OLAPCubeName;
 
         AMO.Server OLAPServer;
         AMO.Database OLAPDatabase;
@@ -39,16 +27,16 @@ namespace BISMDocumenterAMO
 
         string Progressstr;
 
-        BISMDocumenterLibrary.ProgressWritter PX = new BISMDocumenterLibrary.ProgressWritter();
+        BISMDocumenterLibrary.ProgressWriter PX = new BISMDocumenterLibrary.ProgressWriter();
         //string  txtProgress;
 
         int ExcelSheetStartrow;
 
-        public void GenerateDocument(String ServerName, String DBName, String CubeName, String DocumentPath,String FileName, System.Windows.Forms.TextBox progressTextBox,Boolean OpenXl)
+        public void GenerateDocument(String ServerName, String DBName, String CubeName, String DocumentPath, String FileName, System.Windows.Forms.TextBox progressTextBox, Boolean OpenXl)
         {
             try
             {
-                
+
                 String ConnStr;
                 OLAPServerName = ServerName;
                 // txtProgress= "";
@@ -76,8 +64,8 @@ namespace BISMDocumenterAMO
                 Progressstr = "Generation started....";
                 PX.InvokedAppType = "Windows";
                 PX.WriteProgress(Progressstr, progressTextBox);
-                
-                
+
+
 
 
                 if (!System.IO.Directory.Exists(DocumentPath))
@@ -100,149 +88,143 @@ namespace BISMDocumenterAMO
                 Progressstr = "AMO Extracting Metadata for " + ServerName + " - " + DBName + " - " + CubeName;
                 PX.WriteProgress(Progressstr, progressTextBox);
 
-                //if (CubeName.Trim() == "")
-                //{
                 FileName = FileName + ".xlsx";
-                //}
-                //else
-                //{
-                //    Filename = DBName + "-" + CubeName + ".xlsx";
-                //}
+                
 
-                XLApp = new Microsoft.Office.Interop.Excel.Application();
+                XLApp = new Application();
                 XLApp.Visible = false;
 
-                
+
                 XLApp.DisplayAlerts = false;
                 XLWorkBook = XLApp.Workbooks.Add();
 
                 XLWorkBook.SaveAs(OutputPath + "\\" + FileName);
-                
 
-                
+
+
                 progressTextBox.AppendText(XLWorkBook.Sheets.Count.ToString() + Environment.NewLine);
                 XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add();
                 XLWorkSheet.Name = "Server";
-                
+
                 OLAPCube = OLAPDatabase.Cubes.FindByName(OLAPCubeName);
 
-                    WriteHeaderCell(XLWorkSheet, 1, 1, "Server Name");
-                    XLWorkSheet.Cells[1, 2] = ServerName;
-                    FormatCell(XLWorkSheet, 1, 2, -1);
+                WriteHeaderCell(XLWorkSheet, 1, 1, "Server Name");
+                XLWorkSheet.Cells[1, 2] = ServerName;
+                FormatCell(XLWorkSheet, 1, 2, -1);
 
-                    WriteHeaderCell(XLWorkSheet, 2, 1, "Database Name");
-                    XLWorkSheet.Cells[2, 2] = OLAPDBName;
-                    FormatCell(XLWorkSheet, 2, 2, -1);
+                WriteHeaderCell(XLWorkSheet, 2, 1, "Database Name");
+                XLWorkSheet.Cells[2, 2] = OLAPDBName;
+                FormatCell(XLWorkSheet, 2, 2, -1);
 
-                    WriteHeaderCell(XLWorkSheet, 3, 1, "Cube Name");
-                    XLWorkSheet.Cells[3, 2] = OLAPCubeName;
-                    FormatCell(XLWorkSheet, 3, 2, -1);
-                
-                     XLWorkBook.Save();
+                WriteHeaderCell(XLWorkSheet, 3, 1, "Cube Name");
+                XLWorkSheet.Cells[3, 2] = OLAPCubeName;
+                FormatCell(XLWorkSheet, 3, 2, -1);
 
-                    String ProgressStringStartTemplate = "Generating Documentation for <PlaceHolder>....";
+                XLWorkBook.Save();
 
-                    Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Connections");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                String ProgressStringStartTemplate = "Generating Documentation for <PlaceHolder>....";
 
-                    Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Connections");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Connections");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
-                    AMOExtractConnections();
-                    FormatSheet(XLWorkSheet);
+                Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Connections");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                AMOExtractConnections();
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Dimensions");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
-                    AMOExtractDimension();
-                    FormatSheet(XLWorkSheet);
+                Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Dimensions");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                AMOExtractDimension();
+                FormatSheet(XLWorkSheet);
+
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Dimension Attributes");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
                 AMOExtractDimensionAttribute();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Relationships");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractRelationship();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Hierarchies");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractHierarchies();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Measures");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractMeasures();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "KPIs");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractKPIs();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Partitions");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractPartitions();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Perspectives");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractPerspectives();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
 
                 Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Roles");
                 PX.WriteProgress(Progressstr, progressTextBox);
 
 
                 AMOExtractRole();
-                    FormatSheet(XLWorkSheet);
+                FormatSheet(XLWorkSheet);
 
-                    Progressstr = Progressstr.Replace("....", " Completed");
-                    PX.WriteProgress(Progressstr, progressTextBox);
-                
-                
+                Progressstr = Progressstr.Replace("....", " Completed");
+                PX.WriteProgress(Progressstr, progressTextBox);
+
+
 
                 bool sheet1exists = false;
                 bool sheet2exists = false;
@@ -273,11 +255,11 @@ namespace BISMDocumenterAMO
                     }
                 }
 
-                
-                
+
+
                 if (sheet1exists == true)
                 {
-                    XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet) XLWorkBook.Sheets["Sheet1"];
+                    XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Sheet1"];
                     XLWorkSheet.Delete();
 
                 }
@@ -298,7 +280,7 @@ namespace BISMDocumenterAMO
                 XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Server"];
                 XLWorkSheet.Activate();
 
-                
+
 
                 // txtProgress.AppendText(Progressstr + " Completed " + Environment.NewLine);
                 //      }
@@ -329,7 +311,7 @@ namespace BISMDocumenterAMO
                 Progressstr = Progressstr + "Error Occured" + Environment.NewLine;
                 Progressstr = Progressstr + "--------------------------------------------------------------------------------------" + Environment.NewLine;
                 Progressstr = Progressstr + errormsg;
-                
+
                 PX.WriteProgress(Progressstr, progressTextBox);
 
                 if (XLWorkBook != null)
@@ -394,7 +376,7 @@ namespace BISMDocumenterAMO
 
         public void AMOExtractDimension()
         {
-            
+
             ExcelSheetStartrow = 2;
 
 
@@ -453,7 +435,7 @@ namespace BISMDocumenterAMO
             }
             XLWorkBook.Save();
 
-            
+
 
         }
 
@@ -573,7 +555,7 @@ namespace BISMDocumenterAMO
             }
             XLWorkBook.Save();
 
-            
+
 
         }
 
@@ -626,7 +608,7 @@ namespace BISMDocumenterAMO
             }
             XLWorkBook.Save();
 
-            
+
 
         }
 
@@ -725,7 +707,7 @@ namespace BISMDocumenterAMO
             // MeasureScript = MeasureScript.Replace(Environment.NewLine, "");
 
             String[] MeasureArray = MeasureScript.Split(new string[] { "\nCREATE" }, StringSplitOptions.RemoveEmptyEntries);
-            
+
 
             foreach (AMO.CubeDimension MeasureDimension in OLAPCube.Dimensions)
             {
@@ -736,7 +718,7 @@ namespace BISMDocumenterAMO
 
                         MeasureName = MeasureArray[i].Substring(MeasureArray[i].IndexOf("["), MeasureArray[i].IndexOf("]") - MeasureArray[i].IndexOf("[") + 1);
 
-                        
+
 
                         if (MeasureName.IndexOf("[_") < 0)
                         {
@@ -1207,14 +1189,14 @@ namespace BISMDocumenterAMO
 
             ExcelSheetStartrow = 7;
 
-            
+
 
             TOM.StructuredDataSource TOMDs;
 
             TOM.ProviderDataSource TOMPDs;
-            
+
             ColNumber = 1;
-            for (int I = 0;I <= TOMDb.Model.DataSources.Count-1;I++)
+            for (int I = 0; I <= TOMDb.Model.DataSources.Count - 1; I++)
             {
 
 

@@ -2,7 +2,6 @@
 using System;
 using AMO = Microsoft.AnalysisServices;
 using TOM = Microsoft.AnalysisServices.Tabular;
-using System.Windows.Forms;
 
 
 
@@ -11,61 +10,36 @@ namespace BISMDocumenterTOM
     public class BISMDocumenterCls
     {
         string AppPath;
-        string OutputPath;
+        private string OutputPath;
 
-        Microsoft.Office.Interop.Excel.Application XLApp;
-        Microsoft.Office.Interop.Excel.Workbook XLWorkBook;
-        Microsoft.Office.Interop.Excel.Worksheet XLWorkSheet;
+        Application XLApp;
+        Workbook XLWorkBook;
+        Worksheet XLWorkSheet;
+        private string OLAPServerName;
+        private string OLAPDBName;
+        private string OLAPCubeName;
 
-        String OLAPServerName;
-        String OLAPDBName;
-        String OLAPCubeName;
-        
         AMO.Server OLAPServer;
         AMO.Database OLAPDatabase;
         AMO.Cube OLAPCube;
-        
+
 
         TOM.Server TOMServer;
         TOM.Database TOMDb;
 
-        string Progressstr;
+        private string Progressstr;
 
-        //string  txtProgress;
-
-        
         int ExcelSheetStartrow;
 
         int ExcelColNumber = 0;
 
-        BISMDocumenterLibrary.ProgressWritter PX = new BISMDocumenterLibrary.ProgressWritter();
-        
-       
+        readonly BISMDocumenterLibrary.ProgressWriter PX = new BISMDocumenterLibrary.ProgressWriter();
 
-        public void GenerateDocument(String ServerName, String DBName, String CubeName, String DocumentPath, String FileName,System.Windows.Forms.TextBox progressTextBox,Boolean OpenXl)
+
+
+        public void GenerateDocument(String ServerName, String DBName, String CubeName, String DocumentPath, String FileName, System.Windows.Forms.TextBox progressTextBox, Boolean OpenXl)
         {
-            try
-            {
-                String ConnStr;
-                OLAPServerName = ServerName;
-                // txtProgress= "";
-
-                ConnStr = "Provider=MSOLAP;Data Source=" + OLAPServerName + ";";
-                //Initial Catalog=Adventure Works DW 2008R2;"; 
-                //OLAPServer = new AMO.Server();
-                //OLAPServer.Connect(ConnStr);
-
-                TOMServer = new TOM.Server();
-                TOMServer.Connect(ConnStr);
-
-            }
-            catch (Exception err)
-            {
-                string errormsg = err.InnerException.ToString();
-                // txtProgress = // txtProgress + "--------------------------------------------------------------------------------------" + Environment.NewLine;
-                // txtProgress = // txtProgress + "Error Occured" + Environment.NewLine;
-                // txtProgress = // txtProgress + err.InnerException.ToString() + Environment.NewLine;
-            }
+            TOMConnect(ServerName);
 
             try
             {
@@ -74,27 +48,17 @@ namespace BISMDocumenterTOM
                 PX.InvokedAppType = "Windows";
                 PX.WriteProgress(Progressstr, progressTextBox);
 
-               
-
-                //ProgressWritter.WriteProgress()
-                
-
-
                 if (!System.IO.Directory.Exists(DocumentPath))
                 {
                     System.IO.Directory.CreateDirectory(DocumentPath);
                 }
 
                 OutputPath = DocumentPath;
-
-
                 OLAPDBName = DBName;
                 OLAPCubeName = CubeName;
 
-                //OLAPDatabase = OLAPServer.Databases[OLAPDBName.Trim()];
-
                 int TOMCompatibilityLevel;
-                
+
                 if (OLAPDBName.Trim() != "")
                 {
                     TOMDb = TOMServer.Databases[OLAPDBName.Trim()];
@@ -117,15 +81,15 @@ namespace BISMDocumenterTOM
 
 
 
-                    FileName = FileName + ".xlsx";
-                
+                FileName = FileName + ".xlsx";
+
                 XLApp = new Microsoft.Office.Interop.Excel.Application();
                 XLApp.Visible = false;
 
                 XLApp.DisplayAlerts = false;
                 XLWorkBook = XLApp.Workbooks.Add();
                 XLWorkBook.SaveAs(OutputPath + "\\" + FileName);
-                
+
                 XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add();
                 XLWorkSheet.Name = "Server";
 
@@ -141,15 +105,13 @@ namespace BISMDocumenterTOM
                 XLWorkSheet.Cells[3, 2] = TOMCompatibilityLevel;
                 FormatCell(XLWorkSheet, 3, 2, -1);
 
-                //Progressstr = "TOM Extracting Metadata for " + OLAPDatabase + " - " + OLAPCube;
-
                 XLWorkBook.Save();
 
                 String ProgressStringStartTemplate = "Generating Documentation for <PlaceHolder>....";
 
-                Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>","Connections");
+                Progressstr = ProgressStringStartTemplate.Replace("<PlaceHolder>", "Connections");
                 PX.WriteProgress(Progressstr, progressTextBox);
-                
+
                 TOMExtractConnections();
                 FormatSheet(XLWorkSheet);
 
@@ -251,42 +213,37 @@ namespace BISMDocumenterTOM
                     // Check the name of the current sheet
                     if (sheet.Name == "Sheet1")
                     {
-
                         sheet1exists = true;
-
-
                     }
 
                     if (sheet.Name == "Sheet2")
                     {
                         sheet2exists = true;
-
                     }
 
                     if (sheet.Name == "Sheet3")
                     {
                         sheet3exists = true;
-
                     }
                 }
 
-                
-                
-                if (sheet1exists == true)
+
+
+                if (sheet1exists)
                 {
-                    XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet) XLWorkBook.Sheets["Sheet1"];
+                    XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Sheet1"];
                     XLWorkSheet.Delete();
 
                 }
 
-                if (sheet2exists == true)
+                if (sheet2exists)
                 {
                     XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Sheet2"];
                     XLWorkSheet.Delete();
 
                 }
 
-                if (sheet3exists == true)
+                if (sheet3exists)
                 {
                     XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Sheet3"];
                     XLWorkSheet.Delete();
@@ -295,13 +252,7 @@ namespace BISMDocumenterTOM
                 XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Server"];
                 XLWorkSheet.Activate();
 
-
-
-                // txtProgress.AppendText(Progressstr + " Completed " + Environment.NewLine);
-                //      }
-                //  }
-
-                if (OpenXl == false)
+                if (!OpenXl)
                 {
                     XLWorkBook.Close(true);
                     XLApp.Quit();
@@ -318,15 +269,15 @@ namespace BISMDocumenterTOM
 
 
             }
+
             catch (Exception err)
             {
 
                 string errormsg = err.ToString();
-                Progressstr = "--------------------------------------------------------------------------------------" + Environment.NewLine ;
+                Progressstr = "--------------------------------------------------------------------------------------" + Environment.NewLine;
                 Progressstr = Progressstr + "Error Occured" + Environment.NewLine;
                 Progressstr = Progressstr + "--------------------------------------------------------------------------------------" + Environment.NewLine;
                 Progressstr = Progressstr + errormsg;
-                // MessageBox.Show(errormsg, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
 
                 PX.WriteProgress(Progressstr, progressTextBox);
 
@@ -360,10 +311,26 @@ namespace BISMDocumenterTOM
 
         }
 
+        private void TOMConnect(string ServerName)
+        {
+            try
+            {
+                String ConnStr;
+                OLAPServerName = ServerName;
+                ConnStr = "Provider=MSOLAP;Data Source=" + OLAPServerName + ";";
+
+                TOMServer = new TOM.Server();
+                TOMServer.Connect(ConnStr);
+
+            }
+            catch (Exception err)
+            {
+                string errormsg = err.InnerException.ToString();
+            }
+        }
+
         public void TOMExtractConnections()
         {
-            // txtProgress.AppendText(Progressstr + " Connections Started " + Environment.NewLine);
-
 
             ExcelSheetStartrow = 6;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, 1, "Connections");
@@ -393,50 +360,17 @@ namespace BISMDocumenterTOM
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "Path");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "Url");
-            /*
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Connection Name");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Connection String");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Description");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Server");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Database");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Protocol");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Account");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Domain");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "EmailAddress");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Path");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Property");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Resource");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Schema");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "Url");
-            ColNumber++;
-            WriteHeaderCell(XLWorkSheet, 6, ColNumber, "View");
-            */
 
-            ExcelSheetStartrow++; 
-            
+            ExcelSheetStartrow++;
+
             TOM.ProviderDataSource TOMProviderDs;
             TOM.StructuredDataSource TOMStructuredDs;
 
             ExcelColNumber = 1;
-            // for (int I = 0; I <= TOMDb.Model.DataSources.Count - 1; I++)
-            foreach(TOM.DataSource TomDatasource in TOMDb.Model.DataSources)
+
+            foreach (TOM.DataSource TomDatasource in TOMDb.Model.DataSources)
             {
 
-               
-               
                 if (TomDatasource.Type == TOM.DataSourceType.Provider)
                 {
                     //Connection Name
@@ -444,7 +378,7 @@ namespace BISMDocumenterTOM
                     ExcelColNumber = 1;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMProviderDs.Name;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
+
                     //Connection String
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMProviderDs.ConnectionString;
@@ -455,7 +389,7 @@ namespace BISMDocumenterTOM
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                 }
-                else if(TomDatasource.Type == TOM.DataSourceType.Structured)
+                else if (TomDatasource.Type == TOM.DataSourceType.Structured)
                 {
                     TOMStructuredDs = (TOM.StructuredDataSource)TomDatasource;
 
@@ -511,87 +445,21 @@ namespace BISMDocumenterTOM
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMStructuredDs.ConnectionDetails.Address.Url;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
-
-
                 }
 
-
-
-                /*
-                  ExcelColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMDs.Provider;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                 *
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Database;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Protocol;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Account;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Domain;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.EmailAddress;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Path;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Property;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Resource;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Schema;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.Url;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                ColNumber++;
-                XLWorkSheet.Cells[ExcelSheetStartrow, ColNumber] = TOMDs.ConnectionDetails.Address.View;
-                FormatCell(XLWorkSheet, ExcelSheetStartrow, ColNumber, -1);
-                */
-
                 ExcelSheetStartrow++;
             }
 
-            /*
-            foreach (TOM.ProviderDataSource pds in TOMDb.Model.DataSources)
-            {
-               
-                    XLWorkSheet.Cells[ExcelSheetStartrow, 1] = pds.Name;
-                    FormatCell(XLWorkSheet, ExcelSheetStartrow, 1, -1);
-                    XLWorkSheet.Cells[ExcelSheetStartrow, 2] = pds.ConnectionString;
-                    FormatCell(XLWorkSheet, ExcelSheetStartrow, 2, -1);
-                    XLWorkSheet.Cells[ExcelSheetStartrow, 3] = pds.Provider;
-                    FormatCell(XLWorkSheet, ExcelSheetStartrow, 3, -1);
-                    XLWorkSheet.Cells[ExcelSheetStartrow, 4] = pds.Description;
-                    FormatCell(XLWorkSheet, ExcelSheetStartrow, 4, -1);
-
-                ExcelSheetStartrow++;
-              
-            }
-            */
             XLWorkBook.Save();
-            // txtProgress.AppendText(Progressstr + " Connections Completed " + Environment.NewLine);
         }
 
         public void TOMExtractDimension()
         {
-            // try
-            // {
-            // txtProgress.AppendText(Progressstr + " Dimensions Started " + Environment.NewLine);
             ExcelSheetStartrow = 2;
 
-
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Server"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Server"]);
             XLWorkSheet.Name = "Dimensions";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Dimensions"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Dimensions"];
 
             ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "DimensionName");
@@ -614,11 +482,6 @@ namespace BISMDocumenterTOM
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "Description");
 
-
-
-
-
-
             foreach (TOM.Table Dimension in TOMDb.Model.Tables)
             {
 
@@ -637,9 +500,6 @@ namespace BISMDocumenterTOM
                 String DimensionSourceType = Dimension.Partitions[0].SourceType.ToString();
                 XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimensionSourceType;
                 FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-
-
-                
 
                 TOM.QueryPartitionSource TOMPartitionSource;
                 if (DimensionSourceType == TOM.PartitionSourceType.Query.ToString())
@@ -660,7 +520,7 @@ namespace BISMDocumenterTOM
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
                     }
 
-                    
+
                 }
 
                 TOM.CalculatedPartitionSource TOMCalcPartitionSource;
@@ -675,7 +535,7 @@ namespace BISMDocumenterTOM
 
                     // Source Query \\ Expression
                     ExcelColNumber++;
-                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMCalcPartitionSource.Expression ;
+                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMCalcPartitionSource.Expression;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
                 }
 
@@ -754,35 +614,14 @@ namespace BISMDocumenterTOM
 
             }
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Dimensions Completed " + Environment.NewLine);
-            /*
-             }
-            catch (Exception err)
-            {
-
-                string errormsg = err.ToString();
-                // txtProgress.AppendText("--------------------------------------------------------------------------------------" + Environment.NewLine);
-                // txtProgress.AppendText("Error Occured" + Environment.NewLine);
-                // txtProgress.AppendText("--------------------------------------------------------------------------------------" + Environment.NewLine);
-                // txtProgress.AppendText(errormsg + Environment.NewLine);
-
-                throw (err);
-
-            }
-             * */
-
         }
 
         public void TOMExtractDimensionAttribute()
         {
-            // txtProgress.AppendText(Progressstr + " Dimension Attributes Started " + Environment.NewLine);
-            string ColumnSource;
             ExcelSheetStartrow = 2;
-            // XLWorkSheet = XLWorkBook.Sheets["DimensionAttributes"];
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Dimensions"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Dimensions"]);
             XLWorkSheet.Name = "DimensionAttributes";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["DimensionAttributes"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["DimensionAttributes"];
 
             ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "Dimension Name");
@@ -831,10 +670,6 @@ namespace BISMDocumenterTOM
             {
                 foreach (TOM.Column DimAttribute in Dimension.Columns)
                 {
-
-                    
-                    
-
                     //"Dimension Name"
                     ExcelColNumber = 1;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = Dimension.Name;
@@ -862,7 +697,7 @@ namespace BISMDocumenterTOM
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.DataType.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
-                    TOM.DataColumn TomDataColumn ;
+                    TOM.DataColumn TomDataColumn;
                     TOM.RowNumberColumn TOMRowNumberColumn;
                     TOM.CalculatedTableColumn TOMCalculatedTableColumn;
                     TOM.CalculatedColumn TOMCalculatedColumn;
@@ -901,10 +736,9 @@ namespace BISMDocumenterTOM
                     {
                         TOMCalculatedTableColumn = (TOM.CalculatedTableColumn)DimAttribute;
 
-                        
                         //Source DB ColumnName
                         ExcelColNumber++;
-                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMCalculatedTableColumn.SourceColumn  ;
+                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMCalculatedTableColumn.SourceColumn;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                         //Source Data Type
@@ -963,22 +797,22 @@ namespace BISMDocumenterTOM
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.IsAvailableInMDX.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
+
                     //IsHidden
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.IsHidden.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
+
                     //IsUnique
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.IsUnique.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
+
                     //KeepUniqueRows
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.KeepUniqueRows.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
+
                     //SortByColumn
                     ExcelColNumber++;
 
@@ -991,8 +825,8 @@ namespace BISMDocumenterTOM
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.SummarizeBy.ToString();
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                    
-                    
+
+
                     //TableDetailPosition
                     ExcelColNumber++;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = DimAttribute.TableDetailPosition.ToString();
@@ -1004,25 +838,22 @@ namespace BISMDocumenterTOM
 
 
                     ExcelSheetStartrow++;
-                   
+
                 }
             }
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Dimension Attributes Completed " + Environment.NewLine);
 
         }
 
         public void TOMExtractRelationship()
         {
-            // txtProgress.AppendText(Progressstr + " Relationships Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["DimensionAttributes"]);
-            
-            XLWorkSheet.Name = "Relationships";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Relationships"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["DimensionAttributes"]);
 
-            ExcelColNumber=1;
+            XLWorkSheet.Name = "Relationships";
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Relationships"];
+
+            ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "FromTable");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "FromColumn");
@@ -1047,20 +878,18 @@ namespace BISMDocumenterTOM
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, 1, ExcelColNumber, "Type");
 
-
-
             ExcelSheetStartrow++;
 
             TOM.SingleColumnRelationship TOMsingleColumnRelationship;
 
-            foreach(TOM.Relationship TOMRels in TOMDb.Model.Relationships )
+            foreach (TOM.Relationship TOMRels in TOMDb.Model.Relationships)
             {
 
                 if (TOMRels.Type == TOM.RelationshipType.SingleColumn)
                 {
                     TOMsingleColumnRelationship = (TOM.SingleColumnRelationship)TOMRels;
 
-                    ExcelColNumber=1;
+                    ExcelColNumber = 1;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMsingleColumnRelationship.FromTable.Name;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
                     ExcelColNumber++;
@@ -1103,60 +932,19 @@ namespace BISMDocumenterTOM
 
             }
 
-            /*
-            foreach (AMO.Dimension RelDimension in OLAPDatabase.Dimensions)
-            {
-                foreach (AMO.Relationship DimRelationship in RelDimension.Relationships)
-                {
-                    XLWorkSheet.Cells[ExcelSheetStartrow, 1] = RelDimension.Name;
-                    FormatCell(XLWorkSheet, ExcelSheetStartrow, 1, -1);
-                    foreach (AMO.RelationshipEndAttribute FromRelAttribute in DimRelationship.FromRelationshipEnd.Attributes)
-                    {
-                        XLWorkSheet.Cells[ExcelSheetStartrow, 2] = RelDimension.Attributes[FromRelAttribute.AttributeID.ToString()].Name;
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, 2, -1);
-                        XLWorkSheet.Cells[ExcelSheetStartrow, 3] = DimRelationship.FromRelationshipEnd.Multiplicity;
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, 3, -1);
-                    }
-                    foreach (AMO.RelationshipEndAttribute ToRelAttribute in DimRelationship.ToRelationshipEnd.Attributes)
-                    {
-
-                        XLWorkSheet.Cells[ExcelSheetStartrow, 4] = OLAPCube.Dimensions.Find(DimRelationship.ToRelationshipEnd.DimensionID).Name;
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, 4, -1);
-                        XLWorkSheet.Cells[ExcelSheetStartrow, 5] = OLAPCube.Dimensions.Find(DimRelationship.ToRelationshipEnd.DimensionID).Attributes.Find(ToRelAttribute.AttributeID);
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, 5, -1);
-                        XLWorkSheet.Cells[ExcelSheetStartrow, 6] = DimRelationship.ToRelationshipEnd.Multiplicity;
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, 6, -1);
-                    }
-
-                    ExcelSheetStartrow++;
-                }
-
-
-
-            }
-
-            */
-
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Relationships Completed " + Environment.NewLine);
 
         }
 
         public void TOMExtractHierarchies()
         {
-            // txtProgress.AppendText(Progressstr + " Hierarchies Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-          
-
-             XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Relationships"]);
-            //XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add();
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Relationships"]);
             XLWorkSheet.Name = "Hierarchies";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Hierarchies"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Hierarchies"];
 
-
-            ExcelColNumber=1;
+            ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "HierarchyTableName");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "HierarchyName");
@@ -1177,13 +965,11 @@ namespace BISMDocumenterTOM
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "LevelDescription");
 
-
             ExcelSheetStartrow++;
 
-            
             foreach (TOM.Table TOMTable in TOMDb.Model.Tables)
             {
-                foreach(TOM.Hierarchy TOMHierarchy in TOMTable.Hierarchies)
+                foreach (TOM.Hierarchy TOMHierarchy in TOMTable.Hierarchies)
                 {
 
                     foreach (TOM.Level TOMHierarchyLevel in TOMHierarchy.Levels)
@@ -1230,40 +1016,23 @@ namespace BISMDocumenterTOM
 
                         ExcelSheetStartrow++;
                     }
-                    
+
                 }
 
             }
-            
-
-
-
-
-
-
-
-
 
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Hierarchies Completed " + Environment.NewLine);
-
         }
 
         public void TOMExtractMeasures()
         {
-            // txtProgress.AppendText(Progressstr + " Measures Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Hierarchies"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Hierarchies"]);
             XLWorkSheet.Name = "Measures";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Measures"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Measures"];
 
-
-            
-
-            ExcelColNumber=1;
+            ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "Name");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "DataType");
@@ -1290,7 +1059,7 @@ namespace BISMDocumenterTOM
             {
                 foreach (TOM.Measure TOMMeasure in TOMTable.Measures)
                 {
-                    ExcelColNumber=1;
+                    ExcelColNumber = 1;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMMeasure.Name;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
                     ExcelColNumber++;
@@ -1327,28 +1096,19 @@ namespace BISMDocumenterTOM
                 }
             }
 
-
-
-
-            
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Measures Completed " + Environment.NewLine);
 
         }
 
         public void TOMExtractKPIs()
         {
-            // txtProgress.AppendText(Progressstr + " KPIs Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-            
-
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Measures"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Measures"]);
             XLWorkSheet.Name = "KPIs";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["KPIs"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["KPIs"];
 
-            ExcelColNumber=1;
+            ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "KPIMeasure");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "KPIDescription");
@@ -1370,7 +1130,6 @@ namespace BISMDocumenterTOM
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "TrendGraphic");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "TrendDescription");
-
 
             ExcelSheetStartrow++;
 
@@ -1424,10 +1183,7 @@ namespace BISMDocumenterTOM
                 }
             }
 
-            
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " KPIs Completed " + Environment.NewLine);
 
         }
 
@@ -1435,15 +1191,13 @@ namespace BISMDocumenterTOM
 
         public void TOMExtractPartitions()
         {
-            // txtProgress.AppendText(Progressstr + " Partitions Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["KPIs"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["KPIs"]);
             XLWorkSheet.Name = "Partitions";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Partitions"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Partitions"];
 
-           
-            ExcelColNumber=1;
+            ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "PartitionName");
             ExcelColNumber++;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "TableName");
@@ -1464,14 +1218,12 @@ namespace BISMDocumenterTOM
 
             ExcelSheetStartrow++;
 
-
-
             foreach (TOM.Table TOMTable in TOMDb.Model.Tables)
             {
-                foreach(TOM.Partition TOMPartition in TOMTable.Partitions)
+                foreach (TOM.Partition TOMPartition in TOMTable.Partitions)
                 {
                     //PartitionName
-                    ExcelColNumber=1;
+                    ExcelColNumber = 1;
                     XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMPartition.Name; ;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
@@ -1494,13 +1246,11 @@ namespace BISMDocumenterTOM
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMPartitionSource.Query.ToString();
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                        
+
                         //Data Source
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMPartitionSource.DataSource.Name;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                        
-
                     }
 
                     TOM.CalculatedPartitionSource TOMCalcPartitionSource;
@@ -1512,13 +1262,11 @@ namespace BISMDocumenterTOM
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMCalcPartitionSource.Expression;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                        
+
                         //Data Source
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = "";
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-
-                        
                     }
 
                     TOM.MPartitionSource TOMMPartitionSource;
@@ -1530,31 +1278,27 @@ namespace BISMDocumenterTOM
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMMPartitionSource.Expression;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                        
+
                         //Data Source
                         ExcelColNumber++;
                         XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = "";
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-
-                        
                     }
 
-                    TOM.EntityPartitionSource TOMEntitiySource;
+                    TOM.EntityPartitionSource TOMEntitySource;
                     if (TOMPartition.SourceType.ToString() == TOM.PartitionSourceType.Entity.ToString())
                     {
-                        TOMEntitiySource = (TOM.EntityPartitionSource)TOMPartition.Source;
+                        TOMEntitySource = (TOM.EntityPartitionSource)TOMPartition.Source;
 
                         //Query \\ Expression
                         ExcelColNumber++;
-                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMEntitiySource.EntityName;
-                        FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
-                        
-                        //Data Source
-                        ExcelColNumber++;
-                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMEntitiySource.DataSource.Name;
+                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMEntitySource.EntityName;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
-                        
+                        //Data Source
+                        ExcelColNumber++;
+                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMEntitySource.DataSource.Name;
+                        FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
                     }
 
                     //Mode
@@ -1581,25 +1325,16 @@ namespace BISMDocumenterTOM
                 }
             }
 
-            
-
-            
-
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Partitions Completed " + Environment.NewLine);
-
         }
 
         public void TOMExtractPerspectives()
         {
-            // txtProgress.AppendText(Progressstr + " Perspectives Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Partitions"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Partitions"]);
             XLWorkSheet.Name = "Perspectives";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Perspectives"];
-
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Perspectives"];
 
             ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "PerspectiveName");
@@ -1611,22 +1346,17 @@ namespace BISMDocumenterTOM
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "ObjectType");
 
             ExcelSheetStartrow++;
-
-            String PerspectiveName = "";
-            String PerspectiveTableName = "";
-
             foreach (TOM.Perspective TOMPerspective in TOMDb.Model.Perspectives)
             {
-                PerspectiveName = TOMPerspective.Name;
+                string PerspectiveName = TOMPerspective.Name;
                 foreach (TOM.PerspectiveTable TOMPerspectiveTable in TOMPerspective.PerspectiveTables)
                 {
-                    PerspectiveTableName = TOMPerspectiveTable.Name;
+                    string PerspectiveTableName = TOMPerspectiveTable.Name;
                     foreach (TOM.PerspectiveColumn PerspectiveColumn in TOMPerspectiveTable.PerspectiveColumns)
                     {
-
                         //PerspectiveName
                         ExcelColNumber = 1;
-                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = PerspectiveName ;
+                        XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = PerspectiveName;
                         FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                         //TableName
@@ -1701,21 +1431,18 @@ namespace BISMDocumenterTOM
                 }
             }
 
-            
-            XLWorkBook.Save();
 
-            // txtProgress.AppendText(Progressstr + " Perspectives Completed " + Environment.NewLine);
+            XLWorkBook.Save();
         }
 
         public void TOMExtractRole()
         {
-            // txtProgress.AppendText(Progressstr + " Roles Started " + Environment.NewLine);
             ExcelSheetStartrow = 1;
 
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Perspectives"]);
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets.Add(Type.Missing, XLWorkBook.Sheets["Perspectives"]);
 
             XLWorkSheet.Name = "Roles";
-            XLWorkSheet = (Microsoft.Office.Interop.Excel.Worksheet)XLWorkBook.Sheets["Roles"];
+            XLWorkSheet = (Worksheet)XLWorkBook.Sheets["Roles"];
 
             ExcelColNumber = 1;
             WriteHeaderCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, "Role Name");
@@ -1739,7 +1466,7 @@ namespace BISMDocumenterTOM
             String TOMModelRoleDescription;
             String TOMModelRoleMembers;
 
-            foreach (TOM.ModelRole TOMModelRole in TOMDb.Model.Roles )
+            foreach (TOM.ModelRole TOMModelRole in TOMDb.Model.Roles)
             {
                 TOMModelRoleName = TOMModelRole.Name;
                 TOMModelRolePermission = TOMModelRole.ModelPermission.ToString();
@@ -1747,11 +1474,10 @@ namespace BISMDocumenterTOM
                 TOMModelRoleMembers = "";
                 foreach (TOM.ModelRoleMember TOMModelRoleMember in TOMModelRole.Members)
                 {
-                    TOMModelRoleMembers = TOMModelRoleMembers + TOMModelRoleMember.MemberName + Environment.NewLine;
-
+                    TOMModelRoleMembers = $"{TOMModelRoleMembers}{TOMModelRoleMember.MemberName}{Environment.NewLine}";
                 }
 
-                foreach(TOM.TablePermission TOMTablePermission in TOMModelRole.TablePermissions )
+                foreach (TOM.TablePermission TOMTablePermission in TOMModelRole.TablePermissions)
                 {
                     //Role Name
                     ExcelColNumber = 1;
@@ -1776,12 +1502,12 @@ namespace BISMDocumenterTOM
 
                     //Table
                     ExcelColNumber++;
-                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMTablePermission.Table.Name; 
+                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMTablePermission.Table.Name;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                     //FilterExpression
                     ExcelColNumber++;
-                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMTablePermission.FilterExpression; 
+                    XLWorkSheet.Cells[ExcelSheetStartrow, ExcelColNumber] = TOMTablePermission.FilterExpression;
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                     //MetadataPermission
@@ -1790,37 +1516,22 @@ namespace BISMDocumenterTOM
                     FormatCell(XLWorkSheet, ExcelSheetStartrow, ExcelColNumber, -1);
 
                     ExcelSheetStartrow++;
-
-                    
-
                 }
-
-
             }
-           
-            
+
             XLWorkBook.Save();
-
-            // txtProgress.AppendText(Progressstr + " Roles Completed " + Environment.NewLine);
         }
-
-
 
         public void WriteHeaderCell(Worksheet XLWorkSheet, int row, int col, string headercaption)
         {
-
-
-
             Range CellRange;
 
-            CellRange = (Microsoft.Office.Interop.Excel.Range)XLWorkSheet.Cells[row, col];
-
+            CellRange = (Range)XLWorkSheet.Cells[row, col];
 
             CellRange.Value = headercaption;
 
             CellRange.Interior.Color = System.Drawing.Color.CornflowerBlue;
             CellRange.Font.Color = System.Drawing.Color.White;
-
 
             CellRange.Font.Bold = true;
 
@@ -1829,25 +1540,14 @@ namespace BISMDocumenterTOM
             CellRange.Borders[XlBordersIndex.xlEdgeTop].LineStyle = XlLineStyle.xlContinuous;
             CellRange.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
 
-
-
             CellRange.EntireColumn.AutoFit();
-
-            
-
-
-
-
-
-
         }
 
         public void WriteDataCell(Worksheet XLWorkSheet, int row, int col, string CellValue)
         {
-
             Range CellRange;
 
-            CellRange = (Microsoft.Office.Interop.Excel.Range)XLWorkSheet.Cells[row, col];
+            CellRange = (Range)XLWorkSheet.Cells[row, col];
 
             CellRange.Value = CellValue;
 
@@ -1857,9 +1557,6 @@ namespace BISMDocumenterTOM
             CellRange.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
 
             CellRange.EntireColumn.AutoFit();
-
-            
-
         }
 
         public void FormatCell(Worksheet XLWorkSheet, int row, int col, int CellWidth)
@@ -1884,64 +1581,18 @@ namespace BISMDocumenterTOM
 
         public void FormatSheet(Worksheet XLWorkSheet)
         {
-
-            //XLWorkSheet.Cells[row, col] = CellValue;
-            /*
-            Range theRange = (Range) XLWorkSheet.UsedRange;
-                theRange.Select();
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeLeft].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeRight].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeTop].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Style.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignLeft;
-            theRange.Cells.Style.VerticalAlignment = Microsoft.Office.Interop.Excel.XlVAlign.xlVAlignTop;
-            theRange.Columns.AutoFit();
-            theRange.RowHeight = 50;
-            XLApp.ActiveWindow.Zoom = 80;
-            */
-
-            Range theRange = (Range)XLWorkSheet.UsedRange;
-
-            //theRange.Cells.BorderAround2(XlLineStyle.xlContinuous);
+            Range theRange = XLWorkSheet.UsedRange;
 
             theRange.Borders.LineStyle = XlLineStyle.xlContinuous;
-            theRange.Borders.Weight = Microsoft.Office.Interop.Excel.XlBorderWeight.xlThin;
+            theRange.Borders.Weight = XlBorderWeight.xlThin;
 
-
-            /*
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeLeft].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeRight].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeTop].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
-            
-            SelectionRange Se =  theRange.Select();
-           //Selection.Borders[XlBordersIndex.xlEdgeLeft].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeRight].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeTop].LineStyle = XlLineStyle.xlContinuous;
-            theRange.Cells.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
-             * */
-            theRange.Cells.HorizontalAlignment = Microsoft.Office.Interop.Excel.XlHAlign.xlHAlignLeft;
-            theRange.Cells.VerticalAlignment = Microsoft.Office.Interop.Excel.XlVAlign.xlVAlignTop;
+            theRange.Cells.HorizontalAlignment = XlHAlign.xlHAlignLeft;
+            theRange.Cells.VerticalAlignment = XlVAlign.xlVAlignTop;
             theRange.Columns.AutoFit();
             theRange.Rows.AutoFit();
-            //theRange.RowHeight = 50;
             XLApp.ActiveWindow.Zoom = 80;
 
-
-
-            //rn =XLWorkSheet.Range["A1"].Select();
-            /*
-            XLApp.Range[]
-            Range("A1").Select
-            Range(Selection, Selection.End(xlDown)).Select
-            Range(Selection, Selection.End(xlToRight)).Select
-             */
-
         }
-
-      
-
-
     }
 }
 

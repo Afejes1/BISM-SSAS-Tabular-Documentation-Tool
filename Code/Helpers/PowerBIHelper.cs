@@ -70,12 +70,11 @@ A "contributor" is any person that distributes its contribution under this licen
 */
 using System;
 using System.Collections.Generic;
-using System.Text;
-using System.Reflection;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
-using System.Management;
 using System.Linq;
+using System.Management;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PowerBIHelper
 {

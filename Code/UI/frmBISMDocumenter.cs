@@ -1,17 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
 using AMO = Microsoft.AnalysisServices;
 using TOM = Microsoft.AnalysisServices.Tabular;
 //using Microsoft.Office.Core;
-using Microsoft.Office.Interop.Excel;
 
 
 namespace SSASDocumentationTool_DescriptionEditor
@@ -22,7 +13,7 @@ namespace SSASDocumentationTool_DescriptionEditor
         string AppPath;
         string OutputPath;
 
-      
+
         String OLAPServerName;
         String OLAPDBName;
         String OLAPCubeName;
@@ -38,8 +29,8 @@ namespace SSASDocumentationTool_DescriptionEditor
 
         int TabularCompatibilityLevel;
 
-        
-        
+
+
 
         public frmSSASDocumentationTool()
         {
@@ -74,12 +65,12 @@ namespace SSASDocumentationTool_DescriptionEditor
 
                 TOMServer = new TOM.Server();
 
-                
-                
+
+
 
                 OLAPServer.Connect(ConnStr);
                 TOMServer.Connect(ConnStr);
-                
+
                 Console.WriteLine("ServerName : " + OLAPServerName);
 
                 cboDatabaseName.Items.Clear();
@@ -94,7 +85,7 @@ namespace SSASDocumentationTool_DescriptionEditor
                 }
 
             }
-            catch(Exception err)
+            catch (Exception err)
             {
                 string errormsg = err.InnerException.ToString();
                 txtProgress.AppendText("--------------------------------------------------------------------------------------" + Environment.NewLine);
@@ -107,7 +98,7 @@ namespace SSASDocumentationTool_DescriptionEditor
         private void cmdGenerateDocument_Click(object sender, EventArgs e)
         {
 
-            if (radioSSASTabularInstance.Checked ==true)
+            if (radioSSASTabularInstance.Checked == true)
             {
                 if (txtServerName.Text.Trim() == "")
                 {
@@ -121,7 +112,7 @@ namespace SSASDocumentationTool_DescriptionEditor
                     return;
                 }
 
-                if (cboCubeName.Enabled == true &&  cboCubeName.Text.Trim() == "")
+                if (cboCubeName.Enabled == true && cboCubeName.Text.Trim() == "")
                 {
                     MessageBox.Show("Please select a Cube Name", "BISMDocumenter", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
@@ -153,28 +144,28 @@ namespace SSASDocumentationTool_DescriptionEditor
                 //frmSSASDocumentationTool.ActiveForm.Height = 430;
 
                 AppPath = System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath);
-                
+
                 if (!System.IO.Directory.Exists(txtOutputPath.Text))
                 {
                     System.IO.Directory.CreateDirectory(txtOutputPath.Text);
                 }
 
                 OutputPath = txtOutputPath.Text;
-                
-
-                
 
 
-                if (radioPBIDevInstance.Checked== true)
+
+
+
+                if (radioPBIDevInstance.Checked == true)
                 {
 
                     OLAPServerName = cboLocalHost.SelectedItem.ToString();
-                    OLAPServerName = OLAPServerName.Substring(0, OLAPServerName.IndexOf(".") );
+                    OLAPServerName = OLAPServerName.Substring(0, OLAPServerName.IndexOf("."));
                     OLAPServerName = OLAPServerName.Replace("Devenv -", "").Trim();
                     OLAPServerName = OLAPServerName.Replace("PowerBI -", "").Trim();
                     OLAPDBName = "";
                     TabularCompatibilityLevel = 1200;
-                    txtFileName.Text = cboLocalHost.SelectedItem.ToString().Replace(OLAPServerName + ".","") ;
+                    txtFileName.Text = cboLocalHost.SelectedItem.ToString().Replace(OLAPServerName + ".", "");
                 }
 
                 if (radioSSASTabularInstance.Checked == true)
@@ -190,18 +181,18 @@ namespace SSASDocumentationTool_DescriptionEditor
                 if (TabularCompatibilityLevel < 1200)
                 {
                     OLAPCubeName = cboCubeName.SelectedItem.ToString(); // DBCubeName.Substring(DBCubeName.IndexOf("-") + 1, DBCubeName.Length - (DBCubeName.IndexOf("-")+1));
-                    BISMDocumenterAMO.BISMDocumenterCls BISMAMODoc = new BISMDocumenterAMO.BISMDocumenterCls();
-                    BISMAMODoc.GenerateDocument(OLAPServerName, OLAPDBName, OLAPCubeName, OutputPath,Filename,txtProgress,checkBoxOpenXL.Checked);
+                    BISMDocumenterAMO.BISMDocumenterAMO BISMAMODoc = new BISMDocumenterAMO.BISMDocumenterAMO();
+                    BISMAMODoc.GenerateDocument(OLAPServerName, OLAPDBName, OLAPCubeName, OutputPath, Filename, txtProgress, checkBoxOpenXL.Checked);
                 }
                 else
                 {
                     OLAPCubeName = "";
                     BISMDocumenterTOM.BISMDocumenterCls BISMTOMDoc = new BISMDocumenterTOM.BISMDocumenterCls();
-                    BISMTOMDoc.GenerateDocument(OLAPServerName, OLAPDBName, OLAPCubeName, OutputPath,Filename, txtProgress, checkBoxOpenXL.Checked);
+                    BISMTOMDoc.GenerateDocument(OLAPServerName, OLAPDBName, OLAPCubeName, OutputPath, Filename, txtProgress, checkBoxOpenXL.Checked);
                 }
 
 
-                
+
                 //frmSSASDocumentationTool.ActiveForm.Height = 390;
                 progressGeneration.Value = progressGeneration.Maximum;
 
@@ -211,8 +202,8 @@ namespace SSASDocumentationTool_DescriptionEditor
                 }
 
             }
-            
-            catch(Exception err)
+
+            catch (Exception err)
             {
 
                 string errormsg = err.ToString();
@@ -244,21 +235,21 @@ namespace SSASDocumentationTool_DescriptionEditor
             }
             finally
             {
-            /*
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(XLWorkSheet);
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(XLWorkBook);
-                System.Runtime.InteropServices.Marshal.ReleaseComObject(XLApp);
-                GC.Collect();
-                */
+                /*
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(XLWorkSheet);
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(XLWorkBook);
+                    System.Runtime.InteropServices.Marshal.ReleaseComObject(XLApp);
+                    GC.Collect();
+                    */
             }
-            
 
-            }
+
+        }
 
 
         private void Form2_Load(object sender, EventArgs e)
         {
-            txtOutputPath.Text =  System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Output";
+            txtOutputPath.Text = System.IO.Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath) + "\\Output";
 
 
         }
@@ -271,8 +262,8 @@ namespace SSASDocumentationTool_DescriptionEditor
 
             //OLAPDatabase = OLAPServer.Databases[cboDatabaseName.SelectedItem.ToString()];
             OLAPDatabase = OLAPServer.Databases[(cboDatabaseName.SelectedItem as ComboboxItem).Value.ToString()];
-            
-            TOMDb =TOMServer.Databases[(cboDatabaseName.SelectedItem as ComboboxItem).Value.ToString()];
+
+            TOMDb = TOMServer.Databases[(cboDatabaseName.SelectedItem as ComboboxItem).Value.ToString()];
 
             TabularCompatibilityLevel = TOMDb.CompatibilityLevel;
             if (TabularCompatibilityLevel < 1200)
@@ -292,8 +283,8 @@ namespace SSASDocumentationTool_DescriptionEditor
             }
             else
             {
-                cboCubeName.Enabled= false;
-                txtFileName.Text = cboDatabaseName.SelectedItem.ToString() ;
+                cboCubeName.Enabled = false;
+                txtFileName.Text = cboDatabaseName.SelectedItem.ToString();
             }
 
         }
@@ -303,7 +294,7 @@ namespace SSASDocumentationTool_DescriptionEditor
             txtFileName.Text = cboDatabaseName.SelectedItem.ToString() + "-" + cboCubeName.SelectedItem.ToString();
         }
 
-        
+
 
         public class ComboboxItem
         {
@@ -331,7 +322,7 @@ namespace SSASDocumentationTool_DescriptionEditor
 
         private void cboLocalHost_DropDown(object sender, EventArgs e)
         {
-            
+
             cboLocalHost.Items.Clear();
             PowerBIHelper.PowerBIHelper.Refresh();
 
@@ -382,7 +373,7 @@ namespace SSASDocumentationTool_DescriptionEditor
 
         private void checkBoxCurrentCreds_CheckedChanged(object sender, EventArgs e)
         {
-            if (checkBoxCurrentCreds.CheckState==CheckState.Checked)
+            if (checkBoxCurrentCreds.CheckState == CheckState.Checked)
             {
                 textBoxUserName.Enabled = false;
                 textBoxPassword.Enabled = false;
